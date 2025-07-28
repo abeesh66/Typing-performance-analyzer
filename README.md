@@ -1,1 +1,1 @@
-# Typing-performance-analyzer
+# Typing performance analyzer

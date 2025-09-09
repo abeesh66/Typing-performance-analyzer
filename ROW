@@ -146,4 +146,4 @@ class ResultScreen extends JFrame {
 
         setVisible(true);
     }
-}
+} 

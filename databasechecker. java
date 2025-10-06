@@ -1,0 +1,63 @@
+package org.example;
+
+import org.example.database.DatabaseManager;
+import java.sql.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+public class DatabaseChecker {
+    private static final Logger LOGGER = Logger.getLogger(DatabaseChecker.class.getName());
+
+    public static void main(String[] args) {
+        try {
+            // Get database connection
+            Connection conn = DatabaseManager.getInstance().getConnection();
+            
+            // Check if USER table exists
+            DatabaseMetaData meta = conn.getMetaData();
+            try (ResultSet tables = meta.getTables(null, null, "USER", null)) {
+                if (!tables.next()) {
+                    LOGGER.warning("USER table does not exist!");
+                    return;
+                }
+            }
+            
+            // List all users
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery("SELECT * FROM USER")) {
+                
+                LOGGER.info("Current users in the database:");
+                LOGGER.info("------------------------------------------------");
+                LOGGER.info(String.format("| %-5s | %-20s | %-20s | %-25s |", 
+                    "ID", "Username", "Password Hash", "Created At"));
+                LOGGER.info("------------------------------------------------");
+                
+                boolean hasUsers = false;
+                while (rs.next()) {
+                    hasUsers = true;
+                    LOGGER.info(String.format("| %-5d | %-20s | %-20s | %-25s |", 
+                        rs.getInt("userId"),
+                        rs.getString("username"),
+                        rs.getString("password_hash").substring(0, Math.min(20, rs.getString("password_hash").length())) + "...",
+                        rs.getString("created_at")));
+                }
+                
+                if (!hasUsers) {
+                    LOGGER.info("No users found in the database.");
+                }
+                LOGGER.info("------------------------------------------------");
+            }
+            
+            // Check TEST_SESSION table
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as count FROM TEST_SESSION")) {
+                if (rs.next()) {
+                    LOGGER.info("Number of test sessions: " + rs.getInt("count"));
+                }
+            }
+            
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error checking database: " + e.getMessage(), e);
+        }
+    }
+}
